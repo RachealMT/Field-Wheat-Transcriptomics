@@ -1,0 +1,30 @@
+#R. Upton
+#Evaluating the agronomic data yield and height
+#use agronomictraits2021.csv
+
+library(tidyverse)
+library(dplyr)
+library(gcookbook)
+
+agy <- read.csv(file.choose())
+
+head(agy)
+summary(test<-aov(Yield~Line*Treatment, data=agy))
+TukeyHSD(test)
+
+plot<-agy%>%ggplot(aes(x=Treatment, y=Yield.c, col=Line)) + geom_point(position = position_dodge(width = 0.5)) + theme_bw() +theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  ylab("Yield (kg/ha)") + xlab("") + scale_color_brewer(palette = "Dark2") + theme(text = element_text(size = 14, family="serif")) 
+
+
+
+plot
+
+
+plot2<-agy%>%ggplot(aes(x=Treatment, y=Height.c, col=Line)) + geom_point(position = position_dodge(width = 0.5)) + theme_bw() +theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  ylab("Height (cm)") + xlab("") + scale_color_brewer(palette = "Dark2") + theme(text = element_text(size = 14, family="serif")) 
+
+
+
+plot2
+
+
