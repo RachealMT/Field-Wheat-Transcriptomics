@@ -1,0 +1,140 @@
+#ABA and figure 5
+#ABA binding
+
+
+library(pheatmap)
+library(matrixStats)
+library(tidyverse)
+str(counts_data)
+
+
+#gene_count_matrix_outlierENM BHM.csv
+
+counts_data <- read.csv(file.choose(), header=TRUE, row.names=1)
+
+head(counts_data)
+str(counts_data)
+
+
+# read in sample info
+#metadata ENMdropped BHM.csv
+colData <- read.csv(file.choose(), header=TRUE, row.names=1) %>%
+  mutate(Treatment=paste0(Irrigated,".",Line,".", Time.point,"."))
+
+head(colData)
+str(colData)
+
+# making sure the row names in colData matches to column names in counts_data
+
+all(colnames(counts_data) %in% rownames(colData))
+
+# are they in the same order?
+
+all(colnames(counts_data) == rownames(colData))
+
+
+counts_data <- as.matrix(counts_data)
+dim(counts_data)
+str(counts_data)
+
+hist(sqrt(rowVars(counts_data))/rowMeans(counts_data))
+
+filter_data1 <- counts_data[rowMeans(counts_data) > .25,]
+dim(filter_data1)
+hist(sqrt(rowVars(filter_data1))/rowMeans(filter_data1))
+
+filter_data <- filter_data1[sqrt(rowVars(filter_data1))/rowMeans(filter_data1) > .015,]
+dim(filter_data)
+str(filter_data)
+dist <- dist(t(filter_data))
+
+
+me <- hclust(dist)
+plot(me)
+
+pheatmap(mat = log(filter_data+0.1))
+
+#we are going to make a heat map for genes related to line difference in dryland
+#use ABAbindinggenes.csv
+
+aba <- read.csv(file.choose())
+head(aba)
+
+
+abaCounts <- counts_data[rownames(counts_data) %in% aba$Gene_ID,]
+
+dist <- dist(t(abaCounts))
+me <- hclust(dist)
+plot(me)
+pheatmap(log(abaCounts+0.01))
+
+##Now merge replicates, take mean
+saveColNames <- colnames(abaCounts)
+samples <- unique(str_sub(saveColNames, 1,3))
+
+
+meanAbaCounts <- matrix(data = NA, nrow = nrow(abaCounts), ncol = length(samples))
+colnames(meanAbaCounts) <- samples
+
+for (i in 1:length(samples)){
+  pattern <- samples[i]
+  meanAbaCounts[,i] <- rowMeans(abaCounts[,grep(pattern, colnames(abaCounts))])
+}
+
+##finding best order to see trends
+
+rownames(meanAbaCounts) <- rownames(abaCounts)
+col.order <- c("DNB", "DNH", "DNM", "DNT", "DYB", "DYH", "DYT", "DYM",
+               "ENB","ENH", "ENT", "EYB", "EYH", "EYM", "EYT",
+               "LNB", "LNH", "LNM", "LNT", "LYB", "LYH", "LYM", "LYT",
+               "MNB","MNH", "MNM", "MNT", "MYB", "MYH", "MYM", "MYT",
+               "RNB", "RNH", "RNM", "RNT", "RYB", "RYH", "RYM", "RYT",
+               "VNB", "VNH", "VNM", "VNT", "VYB", "VYH", "VYM", "VYT")
+
+
+meanAbaCounts <- meanAbaCounts[ , col.order]
+
+
+
+rownames(meanAbaCounts) <- rownames(abaCounts)
+col.order <- c("DNT","DYT","ENT","EYT","LNT","LYT","MNT","MYT","RNT", "RYT","VNT","VYT",
+               "DNB","DYB","ENB","EYB","LNB","LYB","MNB","MYB","RNB", "RYB","VNB","VYB",
+               "DNH","DYH","ENH","EYH","LNH","LYH","MNH","MYH","RNH", "RYH","VNH","VYH",
+               "DNM","DYM",      "EYM","LNM","LYM","MNM","MYM","RNM", "RYM","VNM","VYM")
+meanAbaCounts <- meanAbaCounts[, col.order]
+
+col.order2 <- c("DNT","DNB", "DNH", "DNM",
+                "DYT","DYB", "DYH","DYM",
+                "ENT","ENB", "ENH",
+                "EYT","EYB","EYH","EYM",
+                "LNT","LNB", "LNH", "LNM",
+                "LYT","LYB", "LYH","LYM",
+                "MNT","MNB", "MNH","MNM",
+                "MYT","MYB","MYH","MYM",
+                "RNT", "RNB", "RNH","RNM",
+                "RYT","RYB", "RYH","RYM",
+                "VNT","VNB", "VNH","VNM",
+                "VYT","VYB","VYH","VYM")
+meanAbaCounts <- meanAbaCounts[ , col.order2]
+
+
+col.order3 <- c("DNT","DNB", "DNH", "DNM",
+                "ENT","ENB", "ENH",
+                "LNT","LNB", "LNH", "LNM",
+                "RNT", "RNB", "RNH","RNM",
+                "SNT","SNB", "SNH","SNM",
+                "VNT","VNB", "VNH","VNM",
+                "DYT","DYB", "DYH","DYM",
+                "EYT","EYB","EYH","EYM",
+                "LYT","LYB", "LYH","LYM",
+                "RYT","RYB", "RYH","RYM",
+                "SYT","SYB","SYH","SYM",
+                "VYT","VYB","VYH","VYM")
+meanAbaCounts <- meanAbaCounts[ , col.order3]
+
+
+
+dist <- dist(t(meanAbaCounts))
+me <- hclust(dist)
+plot(me)
+pheatmap(log(meanAbaCounts+0.01), cluster_cols = T) + theme(text = element_text(size = 12, family="serif"))
